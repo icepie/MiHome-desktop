@@ -36,7 +36,11 @@ def data_dir() -> Path:
     if override:
         return Path(override)
     if is_packaged():
-        return Path(os.environ.get("LOCALAPPDATA") or Path.home()) / _APP_DIR_NAME
+        if sys.platform == "win32":
+            return Path(os.environ.get("LOCALAPPDATA") or Path.home()) / _APP_DIR_NAME
+        # Linux/macOS：遵循 XDG 规范，避免污染 $HOME 根目录
+        xdg = os.environ.get("XDG_DATA_HOME") or (Path.home() / ".local" / "share")
+        return Path(xdg) / _APP_DIR_NAME
     return Path(__file__).resolve().parents[2]
 
 

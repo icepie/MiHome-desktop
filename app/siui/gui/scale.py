@@ -1,8 +1,12 @@
 import ctypes
 import os
+import sys
 
 
 def get_windows_scaling_factor():
+    if sys.platform != "win32":
+        # 非 Windows 没有 windll，系统缩放交由 Qt 自行处理
+        return 1
     try:
         # 调用 Windows API 函数获取缩放比例
         user32 = ctypes.windll.user32
