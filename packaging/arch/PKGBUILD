@@ -1,0 +1,87 @@
+# Maintainer: icepie <icepie.dev@gmail.com>
+pkgname=mihome-desktop
+pkgver=0.5.0.post1
+pkgrel=1
+pkgdesc="米家设备的 Linux 桌面控制端：扫码登录、设备控制、托盘快捷窗、小爱语音（MiHome for Windows 的 Linux 移植）"
+arch=('x86_64')
+url="https://github.com/icepie/MiHome-desktop"
+license=('GPL-3.0-or-later')
+depends=(
+  'dbus'
+  'fontconfig'
+  'freetype2'
+  'glib2'
+  'libgl'
+  'libx11'
+  'libxcb'
+  'libxkbcommon'
+  'libxkbcommon-x11'
+  'xcb-util-cursor'
+  'xcb-util-image'
+  'xcb-util-keysyms'
+  'xcb-util-renderutil'
+  'xcb-util-wm'
+  'zlib'
+)
+makedepends=(
+  'python'
+  'python-pip'
+  'gcc'
+  'patchelf'
+)
+optdepends=(
+  'gtk3: GTK 风格系统主题集成'
+  'wayland: Wayland 会话支持'
+)
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/icepie/MiHome-desktop/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "MiHome-desktop-${pkgver}"
+
+  # 隔离构建环境：Nuitka 编译需要全部运行期依赖 + nuitka 本体
+  python -m venv .venv-build
+  .venv-build/bin/pip install --upgrade pip
+  .venv-build/bin/pip install \
+    'mijiaAPI>=5,<6' 'PySide6>=6.7' 'qrcode>=8' 'qtawesome>=1.4' \
+    'numpy' 'typing_extensions' 'nuitka'
+
+  # Qt 官方翻译随 PySide6 轮子分发，打到固定位置供运行期加载
+  local trans
+  trans=$(.venv-build/bin/python -c \
+    "from PySide6.QtCore import QLibraryInfo; print(QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath))")
+
+  .venv-build/bin/python -m nuitka run.py \
+    --standalone \
+    --enable-plugin=pyside6 \
+    --include-package=app.siui \
+    --include-package=qtawesome \
+    --include-package-data=qtawesome \
+    --include-data-files=app/ui/icon.png=app/ui/icon.png \
+    --include-data-files=app/ui/tray_icon.png=app/ui/tray_icon.png \
+    --include-data-files=app/ui/tray_icon_light.png=app/ui/tray_icon_light.png \
+    --include-data-dir="${trans}"=PySide6/translations \
+    --nofollow-import-to=tkinter,unittest,pytest,tools,tests \
+    --jobs="$(nproc)" \
+    --assume-yes-for-downloads \
+    --output-dir=dist \
+    --output-filename=mihome-desktop \
+    --linux-icon=app/ui/icon.png
+}
+
+package() {
+  cd "MiHome-desktop-${pkgver}"
+
+  install -dm755 "${pkgdir}/opt/mihome-desktop"
+  cp -a dist/run.dist/. "${pkgdir}/opt/mihome-desktop/"
+
+  install -Dm755 /dev/stdin "${pkgdir}/usr/bin/mihome-desktop" <<'EOF'
+#!/bin/sh
+exec /opt/mihome-desktop/mihome-desktop "$@"
+EOF
+
+  install -Dm644 packaging/arch/mihome-desktop.desktop \
+    "${pkgdir}/usr/share/applications/mihome-desktop.desktop"
+  install -Dm644 app/ui/icon.png \
+    "${pkgdir}/usr/share/pixmaps/mihome-desktop.png"
+}

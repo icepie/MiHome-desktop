@@ -158,7 +158,34 @@ cd MiHome-Windows
 
 首次构建耗时较长（创建 venv + 下载依赖 + Nuitka 编译，通常 5–15 分钟，视机器而定）
 
+## Linux 构建（本fork）
 
+Linux 下同样用 Nuitka 编译为免安装目录，无需 MSVC，用系统 gcc 即可：
+
+```bash
+python -m venv .venv && .venv/bin/pip install -U pip
+.venv/bin/pip install 'mijiaAPI>=5,<6' 'PySide6>=6.7' 'qrcode>=8' \
+  'qtawesome>=1.4' numpy typing_extensions nuitka
+TRANS=$(.venv/bin/python -c "from PySide6.QtCore import QLibraryInfo; \
+  print(QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath))")
+.venv/bin/python -m nuitka run.py --standalone --enable-plugin=pyside6 \
+  --include-package=app.siui --include-package=qtawesome --include-package-data=qtawesome \
+  --include-data-files=app/ui/icon.png=app/ui/icon.png \
+  --include-data-files=app/ui/tray_icon.png=app/ui/tray_icon.png \
+  --include-data-files=app/ui/tray_icon_light.png=app/ui/tray_icon_light.png \
+  --include-data-dir="$TRANS"=PySide6/translations \
+  --nofollow-import-to=tkinter,unittest,pytest,tools,tests \
+  --jobs=$(nproc) --assume-yes-for-downloads \
+  --output-dir=dist --output-filename=mihome-desktop --linux-icon=app/ui/icon.png
+```
+
+产物在 `dist/run.dist/`，主程序为 `dist/run.dist/mihome-desktop`，整个目录拷走即可运行。
+
+- 构建版数据目录遵循 XDG 规范：`~/.local/share/MiHome-Windows/`（可用
+  `MIHOME_DATA_DIR` 覆盖），登录凭据仍是 mijiaAPI 的 `~/.config/mijia-api/auth.json`
+- 源码模式直接跑：`python run.py`（数据目录为仓库根，均已 gitignore）
+- 排障：`MIHOME_DEBUG=1` 启动可在崩溃时输出 Python 堆栈，并 dump 解析失败的样式表原文
+- Arch Linux 可直接用 `packaging/arch/` 下的 PKGBUILD 构建安装（AUR 包 `mihome-desktop` 筹备中）
 
 ## 项目结构
 

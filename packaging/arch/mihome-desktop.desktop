@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=米家
+GenericName=Mi Home
+Comment=米家设备的 Linux 桌面控制端
+Exec=/opt/mihome-desktop/mihome-desktop
+Icon=mihome-desktop
+Categories=Utility;
+Keywords=米家;小米;xiaomi;mijia;mihome;智能家居;
+StartupNotify=true
