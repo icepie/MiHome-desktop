@@ -110,10 +110,56 @@ def _install_qt_translator(app) -> None:
             return
 
 
+def _install_debug_hooks() -> None:
+    """MIHOME_DEBUG=1 时启用两项排障钩子：
+
+    - faulthandler：SIGSEGV 时把 Python 层堆栈写到 stderr，否则 Nuitka/Qt
+      层崩溃只剩汇编级 coredump 可看；
+    - Qt 消息钩子：「Could not parse stylesheet」告警只给对象地址，这里
+      反查控件并打印其样式表原文，定位是哪段 QSS 非法。
+    """
+    if os.environ.get("MIHOME_DEBUG") != "1":
+        return
+    import faulthandler
+    faulthandler.enable()
+
+    import re
+    from PySide6.QtCore import qInstallMessageHandler
+
+    def _handler(mode, context, message):  # noqa: ARG001
+        sys.stderr.write(message + "\n")
+        if "Could not parse stylesheet" not in message:
+            return
+        m = re.search(r"\(0x([0-9a-f]+)\)", message)
+        if not m:
+            return
+        addr = int(m.group(1), 16)
+        try:
+            import shiboken6
+            from PySide6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app is None:
+                return
+            for widget in app.allWidgets():
+                try:
+                    if shiboken6.getCppPointer(widget)[0] == addr:
+                        sys.stderr.write(
+                            f"\n===== 非法样式表 {type(widget).__name__} =====\n"
+                            f"{widget.styleSheet()}\n======\n")
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    qInstallMessageHandler(_handler)
+
+
 def main() -> int:
     # 日志先落地：控制台在运行期是隐藏的，异常与失败只能靠文件留存
     from app import is_packaged, setup_logging
     setup_logging()
+    _install_debug_hooks()
     # 源码模式额外把控制台输出与崩溃堆栈同步写进 app.log：崩溃时
     # 控制台窗口会一起消失，事后只剩这个文件能提供线索
     if not is_packaged():
