@@ -33,6 +33,9 @@ optdepends=(
   'gtk3: GTK 风格系统主题集成'
   'wayland: Wayland 会话支持'
 )
+# makepkg 默认开启 lto 会往 CFLAGS 注入 -flto=auto：Nuitka 后端用普通 ld
+# 链接，不认识 LTO 目标文件（plugin needed to handle lto object）而构建失败
+options=('!lto')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/icepie/MiHome-desktop/archive/refs/tags/${pkgver}.tar.gz")
 sha256sums=('f17aac3e742735be4e880c319303cfd53bdaef4e37c77d73badc2f27f9712821')
 
