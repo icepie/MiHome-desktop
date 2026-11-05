@@ -411,13 +411,13 @@ class EnumGridSection(QFrame):
                 button.setStyleSheet(
                     f"QPushButton {{ background: {SiColors.THEME};"
                     f" color: {SiColors.ON_THEME_TEXT}; border: 1px solid {SiColors.THEME};"
-                    " border-radius: 8px; padding: 6px 12px; }}")
+                    f" border-radius: 8px; padding: 6px 12px; }}")
             else:
                 button.setStyleSheet(
                     f"QPushButton {{ background: {SiColors.CTRL_BG};"
                     f" color: {SiColors.TEXT_PRIMARY};"
                     f" border: 1px solid {SiColors.CTRL_BORDER};"
-                    " border-radius: 8px; padding: 6px 12px; }}"
+                    f" border-radius: 8px; padding: 6px 12px; }}"
                     f"QPushButton:hover {{ background: {SiColors.CTRL_BG_HOVER}; }}")
 
     def refresh_value(self, value: Any) -> None:
