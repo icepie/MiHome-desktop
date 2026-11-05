@@ -27,6 +27,6 @@ pkgbase = mihome-desktop
 	optdepends = gtk3: GTK 风格系统主题集成
 	optdepends = wayland: Wayland 会话支持
 	source = mihome-desktop-0.5.0.post1.tar.gz::https://github.com/icepie/MiHome-desktop/archive/refs/tags/0.5.0.post1.tar.gz
-	sha256sums = SKIP
+	sha256sums = f17aac3e742735be4e880c319303cfd53bdaef4e37c77d73badc2f27f9712821
 
 pkgname = mihome-desktop
